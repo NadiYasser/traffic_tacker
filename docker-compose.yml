@@ -1,0 +1,65 @@
+services:
+  postgres-metastore:
+    image: postgres:13
+    container_name: hive-metastore-db
+    environment:
+      POSTGRES_DB: metastore
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+    ports:
+      - "3435:5432"
+      
+  hive-metastore:
+    image: apache/hive:3.1.3
+    container_name: hive-metastore
+    depends_on:
+      - postgres-metastore
+    environment:
+      SERVICE_NAME: metastore
+      DB_DRIVER: postgres
+      IS_RESUME: "false"
+    ports:
+      - "9803:9803"
+    volumes:
+      - ./hive-conf/hive-site.xml:/opt/hive/conf/hive-site.xml
+      - ./warehouse:/opt/hive/warehouse
+
+
+    # Setting UP Spark cluster (1 master + 1 countainer) 
+
+  spark-master:
+    image: apache/spark:3.5.1
+    container_name: spark-master
+    command: >
+      bash -c "/opt/spark/sbin/start-master.sh && tail -f /opt/spark/logs/spark--org.apache.spark.deploy.master*.out"
+    ports:
+      - "8080:8080"  # Spark Master UI
+      - "7077:7077"  # Spark master listening port
+    volumes:
+      - ./warehouse:/opt/spark/warehouse
+      - ./apps:/opt/spark-apps
+      - ./spark-ivy:/tmp/.ivy
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    container_name: spark-worker
+    hostname: spark-worker
+    command: >
+      bash -c "/opt/spark/sbin/start-worker.sh spark://spark-master:7077 --cores 2 --memory 2g && tail -f /opt/spark/logs/spark--org.apache.spark.deploy.worker*.out"
+    ports:
+      - "8081:8081"
+      - "4040:4040" # spark UI 
+      - "10000:10000" # for PowerBI thrift connection 
+    depends_on:
+      - spark-master
+    volumes:
+      - ./warehouse:/opt/spark/warehouse
+      - ./apps:/opt/spark-apps
+      - ./spark-ivy:/tmp/.ivy
+
+  kafka:
+    image: apache/kafka:4.0.2
+    container_name: kafka
+    ports:
+      - "9092:9092"
+      - "29092:29092"
