@@ -23,3 +23,12 @@ raw_stream = (
     .option("StartingOffsets","latest")
     .load()
 )
+
+# convert binary to string
+
+json_stream = raw_stream.selectExpr(
+    "CAST(value AS STRING) as raw_json",
+    "timestamp as kafka_timestamp"
+)
+
+# flexible Schema
