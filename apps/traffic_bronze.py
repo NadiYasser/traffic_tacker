@@ -1,6 +1,6 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
-
+from pyspark.sql.types import *
 # Spark Session Config
 spark = ( SparkSession.builder
          .appName("TrafficStreamingLakehouse")
@@ -32,3 +32,20 @@ json_stream = raw_stream.selectExpr(
 )
 
 # flexible Schema
+traffic_schema = StructType([
+    StructField("vehicule_id",StringType()),
+    StructField("road_id",StringType()),
+    StructField("city_zone",StringType()),
+    StructField("speed",StringType()),
+    StructField("congestion_level",IntegerType()),
+    StructField("weather",StringType()),
+    StructField("event_time",StringType()),
+
+])
+
+parsed = json_stream.withColumn(
+    "data",
+    from_json(col("raw_json"),traffic_schema)
+)
+
+flattened = parsed.select("raw_json","kafka_timestamp")
