@@ -1,0 +1,24 @@
+bronze columns :
+-raw_json
+-kafka_timestamp
+-vehicle_id
+-road_id
+-city_zone
+-speed
+-congestion_level
+-weather
+-dq_flag
+-speed_int
+-event_ts
+
+
+dirty types :
+        "null_speed", 
+        "negative_speed", --C
+        "extreme_speed",  --C
+        "duplicate_vehicle",
+        "late_event",  -C
+        "future_event",  -C
+        "wrong_datatype",
+        "schema_drift",
+        "corrupt_json" --C
