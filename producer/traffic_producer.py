@@ -6,6 +6,8 @@ import time
 from datetime import datetime,timedelta 
 import pytz
 
+
+
 fake = Faker()
 
 producer = KafkaProducer(

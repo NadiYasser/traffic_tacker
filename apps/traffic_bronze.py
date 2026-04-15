@@ -1,6 +1,14 @@
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.types import *
+
+
+"""
+    To run the producer execute this command : docker exec -it spark-worker /opt/spark/bin/spark-submit --conf spark.jars.ivy=/tmp/.ivy --packages io.delta:delta-spark_2.12:3.2.0,org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.1 /opt/spark-apps/traffic_bronze.py
+"""
+
+
+
 # Spark Session Config
 spark = ( SparkSession.builder
          .appName("TrafficStreamingLakehouse")
@@ -48,4 +56,17 @@ parsed = json_stream.withColumn(
     from_json(col("raw_json"),traffic_schema)
 )
 
-flattened = parsed.select("raw_json","kafka_timestamp")
+flattened = parsed.select("raw_json","kafka_timestamp","data.*")
+
+# Bronz Delta Write
+
+bronze_query = (
+    flattened.writeStream
+    .format("delta")
+    .outputMode("append")
+    .option("checkpointLocation","/opt/spark/warehouse/chk/traffic_bronze")
+    .option("path","/opt/spark/warehouse/traffic_bronze")
+    .start()
+)
+
+spark.streams.awaitAnyTermination()   # <-- keeps the stream working until we terminate it manualy
