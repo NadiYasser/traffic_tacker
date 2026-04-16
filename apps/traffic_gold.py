@@ -79,3 +79,28 @@ road_query = (
 )
 
 
+fact_stream = silver_stream.select(
+    "vehicle_id",
+    "road_id",
+    "city_zone",
+    "speed_int",
+    "congestion_level",
+    "event_ts",
+    "peak_flag",
+    "speed_band",
+    "hour",
+    "weather"
+)
+
+fact_enriched = fact_stream.withColumn("date", to_date("event_ts"))
+
+fact_query = (
+    fact_enriched.writeStream
+    .format("delta")
+    .outputMode("append")
+    .option("checkpointLocation", "/opt/spark/warehouse/chk/fact_traffic")
+    .option("path", "/opt/spark/warehouse/fact_traffic")
+    .start()
+)
+
+spark.streams.awaitAnyTermination()
